@@ -129,6 +129,24 @@ func TestErrorContains(t *testing.T) {
 	atb.fail(t, "error is nil")
 }
 
+func TestErrorWant(t *testing.T) {
+	atb := &assertTB{TB: t}
+	ErrorWant(atb, true, fmt.Errorf("0"))
+	atb.pass(t)
+
+	atb = &assertTB{TB: t}
+	ErrorWant(atb, false, nil)
+	atb.pass(t)
+
+	atb = &assertTB{TB: t}
+	ErrorWant(atb, true, nil)
+	atb.fail(t, "expected error: got nil")
+
+	atb = &assertTB{TB: t}
+	ErrorWant(atb, false, fmt.Errorf("0"))
+	atb.fail(t, "unexpected error: 0")
+}
+
 func TestNil(t *testing.T) {
 	atb := &assertTB{TB: t}
 	Nil(atb, nil)

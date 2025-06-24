@@ -127,6 +127,17 @@ func ErrorContains(t testing.TB, err error, target any) {
 	}
 }
 
+// ErrorWant checks if an error is expected or not and
+// and checks it against the given error.
+func ErrorWant(t testing.TB, want bool, err error) {
+	t.Helper()
+	if want && err == nil {
+		t.Fatalf("expected error: got nil")
+	} else if !want && err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 // Zero checks if got is zero value.
 func Zero[T comparable](t testing.TB, got T) {
 	t.Helper()
