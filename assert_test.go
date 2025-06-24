@@ -112,6 +112,10 @@ func TestErrorContains(t *testing.T) {
 	atb.pass(t)
 
 	atb = &assertTB{TB: t}
+	ErrorContains(atb, nil, "")
+	atb.fail(t, "error is nil")
+
+	atb = &assertTB{TB: t}
 	ErrorContains(atb, err, "open socket")
 	atb.fail(t, "unexpected error:")
 
@@ -125,8 +129,8 @@ func TestErrorContains(t *testing.T) {
 	atb.fail(t, "unexpected error:")
 
 	atb = &assertTB{TB: t}
-	ErrorContains(atb, nil, "")
-	atb.fail(t, "error is nil")
+	ErrorContains(atb, err, "[")
+	atb.fail(t, "does not contain \"[\"")
 }
 
 func TestErrorWant(t *testing.T) {

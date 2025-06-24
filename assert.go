@@ -105,12 +105,14 @@ func ErrorContains(t testing.TB, err error, target any) {
 	case string:
 		// if this is a valid regexp, compile it and use it
 		// otherwise, just use it as a string
-		if re, err1 := regexp.Compile(e); err1 == nil {
-			if !re.MatchString(err.Error()) {
-				t.Fatalf("unexpected error: %q does not match %q", err, e)
-			}
-		} else {
-			if !strings.Contains(err.Error(), e) {
+
+		// first check the string itself
+		if !strings.Contains(err.Error(), e) {
+			if re, err1 := regexp.Compile(e); err1 == nil {
+				if !re.MatchString(err.Error()) {
+					t.Fatalf("unexpected error: %q does not match %q", err, e)
+				}
+			} else {
 				t.Fatalf("unexpected error: %q does not contain %q", err, e)
 			}
 		}
