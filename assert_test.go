@@ -32,15 +32,15 @@ func TestAreEqual(t *testing.T) {
 }
 
 func TestEqual(t *testing.T) {
-	atb := new(assertTB)
+	atb := &assertTB{TB: t}
 	Equal(atb, 0, 0)
 	atb.pass(t)
 
-	atb = new(assertTB)
+	atb = &assertTB{TB: t}
 	Equal(atb, time.Now(), time.Time{})
 	atb.fail(t, "expected equal")
 
-	atb = new(assertTB)
+	atb = &assertTB{TB: t}
 	Equal(atb, bytes.NewReader([]byte("a")), bytes.NewReader(nil))
 	atb.fail(t, "expected equal")
 
@@ -50,11 +50,11 @@ func TestEqual(t *testing.T) {
 }
 
 func TestNotEqual(t *testing.T) {
-	atb := new(assertTB)
+	atb := &assertTB{TB: t}
 	NotEqual(atb, 0, 1)
 	atb.pass(t)
 
-	atb = new(assertTB)
+	atb = &assertTB{TB: t}
 	NotEqual(atb, 0, 0)
 	atb.fail(t, "expected not equal, but got equal")
 
@@ -64,21 +64,21 @@ func TestNotEqual(t *testing.T) {
 }
 
 func TestError(t *testing.T) {
-	atb := new(assertTB)
+	atb := &assertTB{TB: t}
 	Error(atb, fmt.Errorf("0"))
 	atb.pass(t)
 
-	atb = new(assertTB)
+	atb = &assertTB{TB: t}
 	Error(atb, nil)
 	atb.fail(t, "expected error, got nil")
 }
 
 func TestNoError(t *testing.T) {
-	atb := new(assertTB)
+	atb := &assertTB{TB: t}
 	NoError(atb, nil)
 	atb.pass(t)
 
-	atb = new(assertTB)
+	atb = &assertTB{TB: t}
 	NoError(atb, fmt.Errorf("0"))
 	atb.fail(t, "unexpected error: 0")
 }
@@ -90,51 +90,51 @@ func TestErrorContains(t *testing.T) {
 		&fs.PathError{Op: "read", Path: "socket", Err: io.ErrClosedPipe},
 	)
 
-	atb := new(assertTB)
+	atb := &assertTB{TB: t}
 	ErrorContains(atb, err, "closed socket:")
 	atb.pass(t)
 
-	atb = new(assertTB)
+	atb = &assertTB{TB: t}
 	ErrorContains(atb, err, "closed socket: .*")
 	atb.pass(t)
 
-	atb = new(assertTB)
+	atb = &assertTB{TB: t}
 	ErrorContains(atb, err, io.EOF)
 	atb.pass(t)
 
-	atb = new(assertTB)
+	atb = &assertTB{TB: t}
 	ErrorContains(atb, err, io.ErrClosedPipe)
 	atb.pass(t)
 
-	atb = new(assertTB)
+	atb = &assertTB{TB: t}
 	var pathError *fs.PathError
 	ErrorContains(atb, err, &pathError)
 	atb.pass(t)
 
-	atb = new(assertTB)
+	atb = &assertTB{TB: t}
 	ErrorContains(atb, err, "open socket")
 	atb.fail(t, "unexpected error:")
 
-	atb = new(assertTB)
+	atb = &assertTB{TB: t}
 	ErrorContains(atb, err, io.ErrNoProgress)
 	atb.fail(t, "unexpected error:")
 
-	atb = new(assertTB)
+	atb = &assertTB{TB: t}
 	var jsonError *json.SyntaxError
 	ErrorContains(atb, err, &jsonError)
 	atb.fail(t, "unexpected error:")
 
-	atb = new(assertTB)
+	atb = &assertTB{TB: t}
 	ErrorContains(atb, nil, "")
 	atb.fail(t, "error is nil")
 }
 
 func TestNil(t *testing.T) {
-	atb := new(assertTB)
+	atb := &assertTB{TB: t}
 	Nil(atb, nil)
 	atb.pass(t)
 
-	atb = new(assertTB)
+	atb = &assertTB{TB: t}
 	Nil(atb, 0)
 	atb.fail(t, "expected nil, got 0")
 
@@ -144,11 +144,11 @@ func TestNil(t *testing.T) {
 }
 
 func TestNotNil(t *testing.T) {
-	atb := new(assertTB)
+	atb := &assertTB{TB: t}
 	NotNil(atb, 0)
 	atb.pass(t)
 
-	atb = new(assertTB)
+	atb = &assertTB{TB: t}
 	NotNil(atb, nil)
 	atb.fail(t, "expected not nil, got nil")
 
@@ -158,99 +158,99 @@ func TestNotNil(t *testing.T) {
 }
 
 func TestZero(t *testing.T) {
-	atb := new(assertTB)
+	atb := &assertTB{TB: t}
 	Zero(atb, 0)
 	atb.pass(t)
 
-	atb = new(assertTB)
+	atb = &assertTB{TB: t}
 	Zero(atb, 1)
 	atb.fail(t, "expected zero, got 1")
 }
 
 func TestNotZero(t *testing.T) {
-	atb := new(assertTB)
+	atb := &assertTB{TB: t}
 	NotZero(atb, 1)
 	atb.pass(t)
 
-	atb = new(assertTB)
+	atb = &assertTB{TB: t}
 	NotZero(atb, 0)
 	atb.fail(t, "expected not zero, got 0")
 }
 
 func TestLen(t *testing.T) {
-	atb := new(assertTB)
+	atb := &assertTB{TB: t}
 	Len(atb, []int{1, 2, 3}, 3)
 	atb.pass(t)
 
-	atb = new(assertTB)
+	atb = &assertTB{TB: t}
 	Len(atb, [3]int{1, 2, 3}, 3)
 	atb.pass(t)
 
-	atb = new(assertTB)
+	atb = &assertTB{TB: t}
 	Len(atb, map[int]int{1: 1}, 1)
 	atb.pass(t)
 
-	atb = new(assertTB)
+	atb = &assertTB{TB: t}
 	Len(atb, "hello", 5)
 	atb.pass(t)
 
-	atb = new(assertTB)
+	atb = &assertTB{TB: t}
 	Len(atb, make(chan int), 0)
 	atb.pass(t)
 
-	atb = new(assertTB)
+	atb = &assertTB{TB: t}
 	Len(atb, []int{1, 2, 3}, 2)
 	atb.fail(t, "expected length 2, got 3")
 }
 
 func TestTrue(t *testing.T) {
-	atb := new(assertTB)
+	atb := &assertTB{TB: t}
 	True(atb, true)
 	atb.pass(t)
 
-	atb = new(assertTB)
+	atb = &assertTB{TB: t}
 	True(atb, false)
 	atb.fail(t, "expected true, got false")
 }
 
 func TestFalse(t *testing.T) {
-	atb := new(assertTB)
+	atb := &assertTB{TB: t}
 	False(atb, false)
 	atb.pass(t)
 
-	atb = new(assertTB)
+	atb = &assertTB{TB: t}
 	False(atb, true)
 	atb.fail(t, "expected false, got true")
 }
 
 func TestPanic(t *testing.T) {
-	atb := new(assertTB)
+	atb := &assertTB{TB: t}
 	Panic(atb, func() { panic(0) })
 	atb.pass(t)
 
-	atb = new(assertTB)
+	atb = &assertTB{TB: t}
 	Panic(atb, func() {})
 	atb.fail(t, "expected panic, got nothing")
 }
 
 func TestNotPanic(t *testing.T) {
-	atb := new(assertTB)
+	atb := &assertTB{TB: t}
 	NotPanic(atb, func() {})
 	atb.pass(t)
 
-	atb = new(assertTB)
+	atb = &assertTB{TB: t}
 	NotPanic(atb, func() { panic(0) })
 	atb.fail(t, "unexpected panic: 0")
 }
 
 func TestDefer(t *testing.T) {
-	atb := new(assertTB)
+	atb := &assertTB{TB: t}
 	func() {
 		defer Defer(atb, func() error { return nil })
 	}()
 	atb.pass(t)
 
-	atb = new(assertTB)
+	atb = &assertTB{TB: t}
 	func() {
 		fn := func() error { return fmt.Errorf("0") }
 		defer Defer(atb, fn)()
@@ -259,20 +259,22 @@ func TestDefer(t *testing.T) {
 }
 
 func TestTypeAssert(t *testing.T) {
-	atb := new(assertTB)
+	atb := &assertTB{TB: t}
 	TypeAssert[int](atb, 0)
 	atb.pass(t)
 
-	atb = new(assertTB)
+	atb = &assertTB{TB: t}
 	TypeAssert[io.Reader](atb, &bytes.Buffer{})
 	atb.pass(t)
 
-	atb = new(assertTB)
+	atb = &assertTB{TB: t}
 	TypeAssert[string](atb, 0)
 	atb.fail(t, "assertion string.(int) failed")
 }
 
 type assertTB struct {
+	testing.TB
+
 	helper  bool
 	failed  bool
 	format  string

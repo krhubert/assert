@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
+	"testing"
 
 	"github.com/r3labs/diff/v3"
 	"github.com/sanity-io/litter"
@@ -21,12 +22,6 @@ var DiffOptions = litter.Options{
 	Separator:         " ",
 }
 
-// testingTB is subset of testing.TB interface for testing purposes.
-type testingTB interface {
-	Helper()
-	Fatalf(format string, args ...any)
-}
-
 // Equal checks if two values are equal.
 //
 // Following rules are used to determine if two values are equal:
@@ -36,7 +31,7 @@ type testingTB interface {
 // 3. if Equal(v) bool method is defined on the value, it is used.
 // 4. if the value is a []byte, bytes.Equal is used.
 // 5. otherwise, reflect.DeepEqual is used.
-func Equal[V any](t testingTB, got V, want V) {
+func Equal[V any](t testing.TB, got V, want V) {
 	if _, ok := any(got).(error); ok {
 		panic("use assert.Error() for errors")
 	}
@@ -49,7 +44,7 @@ func Equal[V any](t testingTB, got V, want V) {
 
 // NotEqual checks if two values are not equal.
 // See [Equal] for rules used to determine equality.
-func NotEqual[T any](t testingTB, got T, want T) {
+func NotEqual[T any](t testing.TB, got T, want T) {
 	if _, ok := any(got).(error); ok {
 		panic("use assert.Error() for errors")
 	}
@@ -61,7 +56,7 @@ func NotEqual[T any](t testingTB, got T, want T) {
 }
 
 // Error checks if an error is not nil.
-func Error(t testingTB, err error) {
+func Error(t testing.TB, err error) {
 	t.Helper()
 	if err == nil {
 		t.Fatalf("expected error, got nil")
@@ -69,7 +64,7 @@ func Error(t testingTB, err error) {
 }
 
 // NoError checks if an error is nil.
-func NoError(t testingTB, err error) {
+func NoError(t testing.TB, err error) {
 	t.Helper()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -92,7 +87,7 @@ func NoError(t testingTB, err error) {
 // 3. type
 //
 // The error is checked if it can be converted to the target type using errors.As.
-func ErrorContains(t testingTB, err error, target any) {
+func ErrorContains(t testing.TB, err error, target any) {
 	t.Helper()
 	if err == nil {
 		t.Fatalf("error is nil")
@@ -133,7 +128,7 @@ func ErrorContains(t testingTB, err error, target any) {
 }
 
 // Zero checks if got is zero value.
-func Zero[T comparable](t testingTB, got T) {
+func Zero[T comparable](t testing.TB, got T) {
 	t.Helper()
 	if got != *new(T) {
 		t.Fatalf("expected zero, got %v", got)
@@ -141,7 +136,7 @@ func Zero[T comparable](t testingTB, got T) {
 }
 
 // NotZero checks if got is not zero value.
-func NotZero[V comparable](t testingTB, got V) {
+func NotZero[V comparable](t testing.TB, got V) {
 	t.Helper()
 	if got == *new(V) {
 		t.Fatalf("expected not zero, got %v", got)
@@ -149,7 +144,7 @@ func NotZero[V comparable](t testingTB, got V) {
 }
 
 // Nil checks if got is nil.
-func Nil(t testingTB, got any) {
+func Nil(t testing.TB, got any) {
 	if _, ok := got.(error); ok {
 		panic("use assert.NoError() for errors")
 	}
@@ -161,7 +156,7 @@ func Nil(t testingTB, got any) {
 }
 
 // NotNil checks if got is not nil.
-func NotNil(t testingTB, got any) {
+func NotNil(t testing.TB, got any) {
 	if _, ok := got.(error); ok {
 		panic("use assert.Error() for errors")
 	}
@@ -174,7 +169,7 @@ func NotNil(t testingTB, got any) {
 
 // Len checks if the length of got is l.
 // got can be any go type accepted by builtin len function.
-func Len[V any](t testingTB, got V, want int) {
+func Len[V any](t testing.TB, got V, want int) {
 	t.Helper()
 
 	l := reflect.ValueOf(got).Len()
@@ -184,7 +179,7 @@ func Len[V any](t testingTB, got V, want int) {
 }
 
 // True checks if got is true.
-func True(t testingTB, got bool) {
+func True(t testing.TB, got bool) {
 	t.Helper()
 	if !got {
 		t.Fatalf("expected true, got false")
@@ -192,7 +187,7 @@ func True(t testingTB, got bool) {
 }
 
 // False checks if got is false.
-func False(t testingTB, got bool) {
+func False(t testing.TB, got bool) {
 	t.Helper()
 	if got {
 		t.Fatalf("expected false, got true")
@@ -200,7 +195,7 @@ func False(t testingTB, got bool) {
 }
 
 // Panic checks if f panics.
-func Panic(t testingTB, f func()) {
+func Panic(t testing.TB, f func()) {
 	t.Helper()
 
 	defer func() {
@@ -213,7 +208,7 @@ func Panic(t testingTB, f func()) {
 }
 
 // NotPanic checks if f does not panic.
-func NotPanic(t testingTB, f func()) {
+func NotPanic(t testing.TB, f func()) {
 	t.Helper()
 
 	defer func() {
@@ -226,7 +221,7 @@ func NotPanic(t testingTB, f func()) {
 }
 
 // Defer returns a function that will call fn and check if an error is returned.
-func Defer(t testingTB, fn func() error) func() {
+func Defer(t testing.TB, fn func() error) func() {
 	t.Helper()
 	return func() {
 		if err := fn(); err != nil {
@@ -236,7 +231,7 @@ func Defer(t testingTB, fn func() error) func() {
 }
 
 // TypeAssert checks if got is of type V and returns it.
-func TypeAssert[V any](t testingTB, got any) V {
+func TypeAssert[V any](t testing.TB, got any) V {
 	t.Helper()
 	v, ok := got.(V)
 	if !ok {
