@@ -337,7 +337,7 @@ func diffValue[V any](a V, b V) string {
 	if changelog, err := diff.Diff(a, b); err == nil {
 		ret := "\n"
 		for _, c := range changelog {
-			ret += fmt.Sprintf("[%s]%T path %s: %q -> %q\n", c.Type, a, strings.Join(c.Path, "."), c.From, c.To)
+			ret += fmt.Sprintf("[%s] %T path %s: %q -> %q\n", c.Type, a, strings.Join(c.Path, "."), c.From, c.To)
 		}
 		return ret
 	}
@@ -353,14 +353,14 @@ func diffValue[V any](a V, b V) string {
 }
 
 func diffGoStringer(a, b fmt.GoStringer) string {
-	got := "<nil>"
+	got := "nil"
 	if !isNil(a) {
 		got = a.GoString()
 	}
 
-	want := "<nil>"
+	want := "nil"
 	if !isNil(b) {
 		want = b.GoString()
 	}
-	return fmt.Sprintf("got %s, want %s", got, want)
+	return fmt.Sprintf(" got: %s\n want %s\n", got, want)
 }
