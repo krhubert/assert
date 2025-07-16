@@ -303,6 +303,24 @@ func TestTypeAssert(t *testing.T) {
 	atb.fail(t, "assertion string.(int) failed")
 }
 
+func TestMust(t *testing.T) {
+	Panic(t, func() {
+		Must(0, fmt.Errorf("err"))
+	})
+}
+
+func TestMust2(t *testing.T) {
+	Panic(t, func() {
+		Must2("", 0, fmt.Errorf("err"))
+	})
+}
+
+func TestMust3(t *testing.T) {
+	Panic(t, func() {
+		Must3(true, "", 0, fmt.Errorf("err"))
+	})
+}
+
 type assertTB struct {
 	testing.TB
 
