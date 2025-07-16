@@ -37,7 +37,7 @@ func Equal[V any](t testing.TB, got V, want V) {
 	}
 
 	t.Helper()
-	if !areEqual(got, want) {
+	if !equal(got, want) {
 		t.Fatalf("expected equal\n%s", diffValue(got, want))
 	}
 }
@@ -50,7 +50,7 @@ func NotEqual[T any](t testing.TB, got T, want T) {
 	}
 
 	t.Helper()
-	if areEqual(got, want) {
+	if equal(got, want) {
 		t.Fatalf("expected not equal, but got equal")
 	}
 }
@@ -129,8 +129,21 @@ func ErrorContains(t testing.TB, err error, target any) {
 	}
 }
 
-// ErrorWant checks if an error is expected or not and
-// and checks it against the given error.
+// ErrorWant checks if an error is expected for the test.
+// A common usage in tests is:
+//
+//	type tests struct {
+//		name    string
+//		// other fields
+//		wantErr bool
+//	}
+//
+//	for _, tt := range tests {
+//		t.Run(tt.name, func(t *testing.T) {
+//			err := fn()
+//			assert.ErrorWant(t, tt.wantErr, err)
+//		})
+//	}
 func ErrorWant(t testing.TB, want bool, err error) {
 	t.Helper()
 	if want && err == nil {
@@ -253,7 +266,7 @@ func TypeAssert[V any](t testing.TB, got any) V {
 	return v
 }
 
-func areEqual[V any](got V, want V) bool {
+func equal[V any](got V, want V) bool {
 	if isNil(got) && isNil(want) {
 		return true
 	}

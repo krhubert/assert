@@ -12,23 +12,23 @@ import (
 )
 
 func TestAreEqual(t *testing.T) {
-	True(t, areEqual[*int](nil, nil))
-	False(t, areEqual[any](nil, 0))
-	True(t, areEqual(0, 0))
-	False(t, areEqual(1, 0))
-	True(t, areEqual([]byte("hello"), []byte("hello")))
-	False(t, areEqual([]byte("hello"), []byte("-")))
+	True(t, equal[*int](nil, nil))
+	False(t, equal[any](nil, 0))
+	True(t, equal(0, 0))
+	False(t, equal(1, 0))
+	True(t, equal([]byte("hello"), []byte("hello")))
+	False(t, equal([]byte("hello"), []byte("-")))
 
 	// interface Equal(V) bool
 	now := time.Now()
-	True(t, areEqual(now, now))
-	True(t, areEqual(&now, &now))
-	False(t, areEqual(now, time.Time{}))
+	True(t, equal(now, now))
+	True(t, equal(&now, &now))
+	False(t, equal(now, time.Time{}))
 
 	// dereference pointers
 	a, b := 0, 0
-	True(t, areEqual(&a, &b))
-	True(t, areEqual([]*int{&a}, []*int{&b}))
+	True(t, equal(&a, &b))
+	True(t, equal([]*int{&a}, []*int{&b}))
 }
 
 func TestEqual(t *testing.T) {
