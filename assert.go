@@ -266,6 +266,30 @@ func TypeAssert[V any](t testing.TB, got any) V {
 	return v
 }
 
+// Must is a helper function to handle a single return value from a function.
+func Must[P1 any](p1 P1, err error) P1 {
+	if err != nil {
+		panic(fmt.Sprintf("unexpected error: %v", err))
+	}
+	return p1
+}
+
+// Must2 is a helper function to handle two return values from a function.
+func Must2[P1 any, P2 any](p1 P1, p2 P2, err error) (P1, P2) {
+	if err != nil {
+		panic(fmt.Sprintf("unexpected error: %v", err))
+	}
+	return p1, p2
+}
+
+// Must3 is a helper function to handle three return values from a function.
+func Must3[P1 any, P2 any, P3 any](p1 P1, p2 P2, p3 P3, err error) (P1, P2, P3) {
+	if err != nil {
+		panic(fmt.Sprintf("unexpected error: %v", err))
+	}
+	return p1, p2, p3
+}
+
 func equal[V any](got V, want V) bool {
 	if isNil(got) && isNil(want) {
 		return true
