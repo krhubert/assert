@@ -11,7 +11,11 @@ import (
 	"time"
 )
 
-func TestAreEqual(t *testing.T) {
+func Test_equal(t *testing.T) {
+	type T struct {
+		t *time.Time
+	}
+
 	True(t, equal[*int](nil, nil))
 	False(t, equal[any](nil, 0))
 	True(t, equal(0, 0))
@@ -21,8 +25,13 @@ func TestAreEqual(t *testing.T) {
 
 	// interface Equal(V) bool
 	now := time.Now()
-	True(t, equal(now, now))
-	True(t, equal(&now, &now))
+	utc := now.In(time.UTC)
+
+	wlc := Must(time.LoadLocation("Europe/Warsaw"))
+	waw := now.In(wlc)
+
+	True(t, equal(utc, waw))
+	True(t, equal(&utc, &waw))
 	False(t, equal(now, time.Time{}))
 
 	// dereference pointers
