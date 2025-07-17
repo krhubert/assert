@@ -22,6 +22,44 @@ var DiffOptions = litter.Options{
 	Separator:         " ",
 }
 
+type equaler struct {
+	unexported      bool
+	skipEmptyFields bool
+}
+
+type EqualOption func(o *equaler)
+
+func (o *equaler) apply(opts ...EqualOption) []cmp.Option {
+	for _, opt := range opts {
+		opt(o)
+	}
+
+	out := []cmp.Option{}
+	if o.unexported {
+		out = append(out, ignoreUnexported())
+	} else {
+		out = append(out, compareExported())
+	}
+
+	if o.skipEmptyFields {
+		out = append(out, ignoreEmptyFields())
+	}
+
+	return out
+}
+
+func IgnoreUnexported() EqualOption {
+	return func(o *equaler) {
+		o.unexported = true
+	}
+}
+
+func SkipEmptyFields() EqualOption {
+	return func(o *equaler) {
+		o.skipEmptyFields = true
+	}
+}
+
 // Equal checks if two values are equal.
 //
 // Following rules are used to determine if two values are equal:
@@ -31,26 +69,26 @@ var DiffOptions = litter.Options{
 // 3. if Equal(v) bool method is defined on the value, it is used.
 // 4. if the value is a []byte, bytes.Equal is used.
 // 5. otherwise, reflect.DeepEqual is used.
-func Equal[V any](t testing.TB, got V, want V) {
+func Equal[V any](t testing.TB, got V, want V, opts ...EqualOption) {
 	if _, ok := any(got).(error); ok {
 		panic("use assert.Error() for errors")
 	}
 
 	t.Helper()
-	if !equal(got, want) {
+	if !equal(got, want, opts...) {
 		t.Fatalf("expected equal\n%s", diffValue(got, want))
 	}
 }
 
 // NotEqual checks if two values are not equal.
 // See [Equal] for rules used to determine equality.
-func NotEqual[T any](t testing.TB, got T, want T) {
+func NotEqual[T any](t testing.TB, got T, want T, opts ...EqualOption) {
 	if _, ok := any(got).(error); ok {
 		panic("use assert.Error() for errors")
 	}
 
 	t.Helper()
-	if equal(got, want) {
+	if equal(got, want, opts...) {
 		t.Fatalf("expected not equal, but got equal")
 	}
 }
@@ -290,8 +328,10 @@ func Must3[P1 any, P2 any, P3 any](p1 P1, p2 P2, p3 P3, err error) (P1, P2, P3) 
 	return p1, p2, p3
 }
 
-func equal[V any](got V, want V) bool {
-	return cmp.Equal(got, want, cmp.Exporter(func(reflect.Type) bool { return true }))
+func equal[V any](got V, want V, opts ...EqualOption) bool {
+	eq := equaler{}
+	cmpOpts := eq.apply(opts...)
+	return cmp.Equal(got, want, cmpOpts...)
 }
 
 func isNil(obj any) bool {

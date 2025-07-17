@@ -80,6 +80,34 @@ func TestEqual(t *testing.T) {
 	})
 }
 
+func TestEqualUnexported(t *testing.T) {
+	type T struct {
+		A int
+		b int
+	}
+
+	atb := &assertTB{TB: t}
+	got := T{A: 1, b: 2}
+	want := T{A: 1, b: 3}
+	Equal(atb, got, want, IgnoreUnexported())
+	atb.pass(t)
+}
+
+func TestEqualSkipEmptyFields(t *testing.T) {
+	type T struct {
+		A int
+		b int
+		C time.Time
+		D []int
+	}
+
+	atb := &assertTB{TB: t}
+	got := T{A: 1, b: 2, C: time.Now(), D: []int{1}}
+	want := T{b: 2}
+	Equal(atb, got, want, SkipEmptyFields())
+	atb.pass(t)
+}
+
 func TestNotEqual(t *testing.T) {
 	atb := &assertTB{TB: t}
 	NotEqual(atb, 0, 1)
@@ -121,47 +149,82 @@ func TestErrorContains(t *testing.T) {
 		&fs.PathError{Op: "read", Path: "socket", Err: io.ErrClosedPipe},
 	)
 
-	atb := &assertTB{TB: t}
-	ErrorContains(atb, err, "closed socket:")
-	atb.pass(t)
+	tests := []struct {
+		name   string
+		err    error
+		target any
+		fail   string
+	}{
+		{
+			name:   "string match",
+			err:    err,
+			target: "closed socket:",
+		},
+		{
+			name:   "string regex match",
+			err:    err,
+			target: "closed socket: .*",
+		},
+		{
+			name:   "error match",
+			err:    err,
+			target: io.EOF,
+		},
+		{
+			name:   "error wrap",
+			err:    err,
+			target: io.ErrClosedPipe,
+		},
+		{
+			name: "fs.PathError match",
+			err:  err,
+			target: func() **fs.PathError {
+				var pathError *fs.PathError
+				return &pathError
+			}(),
+		},
+		{
+			name:   "nil error",
+			err:    nil,
+			target: "",
+			fail:   "error is nil",
+		},
+		{
+			name:   "string not found",
+			err:    err,
+			target: "open socket",
+			fail:   "unexpected error:",
+		},
+		{
+			name:   "error not found",
+			err:    err,
+			target: io.ErrNoProgress,
+			fail:   "unexpected error:",
+		},
+		{
+			name: "json.SyntaxError not found",
+			err:  err,
+			target: func() **json.SyntaxError {
+				var jsonError *json.SyntaxError
+				return &jsonError
+			}(),
+			fail: "unexpected error:",
+		},
+		{
+			name:   "string not found in error",
+			err:    err,
+			target: "[",
+			fail:   "does not contain \"[\"",
+		},
+	}
 
-	atb = &assertTB{TB: t}
-	ErrorContains(atb, err, "closed socket: .*")
-	atb.pass(t)
-
-	atb = &assertTB{TB: t}
-	ErrorContains(atb, err, io.EOF)
-	atb.pass(t)
-
-	atb = &assertTB{TB: t}
-	ErrorContains(atb, err, io.ErrClosedPipe)
-	atb.pass(t)
-
-	atb = &assertTB{TB: t}
-	var pathError *fs.PathError
-	ErrorContains(atb, err, &pathError)
-	atb.pass(t)
-
-	atb = &assertTB{TB: t}
-	ErrorContains(atb, nil, "")
-	atb.fail(t, "error is nil")
-
-	atb = &assertTB{TB: t}
-	ErrorContains(atb, err, "open socket")
-	atb.fail(t, "unexpected error:")
-
-	atb = &assertTB{TB: t}
-	ErrorContains(atb, err, io.ErrNoProgress)
-	atb.fail(t, "unexpected error:")
-
-	atb = &assertTB{TB: t}
-	var jsonError *json.SyntaxError
-	ErrorContains(atb, err, &jsonError)
-	atb.fail(t, "unexpected error:")
-
-	atb = &assertTB{TB: t}
-	ErrorContains(atb, err, "[")
-	atb.fail(t, "does not contain \"[\"")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			atb := &assertTB{TB: t}
+			ErrorContains(atb, tt.err, tt.target)
+			atb.check(t, tt.fail)
+		})
+	}
 }
 
 func TestErrorWant(t *testing.T) {
@@ -370,6 +433,15 @@ func (atb *assertTB) Fatalf(format string, args ...any) {
 	atb.format = format
 	atb.args = args
 	atb.message = fmt.Sprintf(format, args...)
+}
+
+func (atb *assertTB) check(t testing.TB, fail string) {
+	t.Helper()
+	if fail != "" {
+		atb.fail(t, fail)
+	} else {
+		atb.pass(t)
+	}
 }
 
 func (atb *assertTB) pass(t testing.TB) {
