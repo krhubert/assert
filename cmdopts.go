@@ -47,8 +47,11 @@ func ignoreEmptyFields() cmp.Option {
 // isEmptyValue checks if the given reflect.Value is empty.
 func isEmptyValue(v reflect.Value) bool {
 	switch v.Kind() {
-	case reflect.Array, reflect.Map, reflect.Slice, reflect.String:
+	case reflect.Map, reflect.Slice, reflect.String:
 		return v.Len() == 0
+	case reflect.Array:
+		zero := reflect.Zero(v.Type()).Interface()
+		return reflect.DeepEqual(v.Interface(), zero)
 	case reflect.Bool,
 		reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
 		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr,
