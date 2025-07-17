@@ -29,7 +29,7 @@ type equaler struct {
 
 type EqualOption func(o *equaler)
 
-func (o *equaler) apply(opts ...EqualOption) []cmp.Option {
+func (o *equaler) apply(opts ...EqualOption) cmp.Options {
 	for _, opt := range opts {
 		opt(o)
 	}
