@@ -1,7 +1,6 @@
 package assert
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"reflect"
@@ -9,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/r3labs/diff/v3"
 	"github.com/sanity-io/litter"
 	"github.com/sergi/go-diff/diffmatchpatch"
@@ -291,45 +291,7 @@ func Must3[P1 any, P2 any, P3 any](p1 P1, p2 P2, p3 P3, err error) (P1, P2, P3) 
 }
 
 func equal[V any](got V, want V) bool {
-	if isNil(got) && isNil(want) {
-		return true
-	}
-
-	if isNil(got) || isNil(want) {
-		return false
-	}
-
-	if g, ok := any(got).([]byte); ok {
-		return bytes.Equal(g, any(want).([]byte))
-	}
-
-	if g, ok := any(got).(interface{ Equal(V) bool }); ok {
-		return g.Equal(want)
-	}
-
-	derefGot := deref(got)
-	derefWant := deref(want)
-
-	// use reflection to see if the dereferenced value
-	// has an Equal method (value-receiver or pointer-receiver)
-	gv := reflect.ValueOf(derefGot)
-	if method := gv.MethodByName("Equal"); method.IsValid() {
-		methodType := method.Type()
-		if methodType.NumIn() == 1 && methodType.NumOut() == 1 && methodType.Out(0).Kind() == reflect.Bool {
-			arg := reflect.ValueOf(derefWant)
-			return method.Call([]reflect.Value{arg})[0].Bool()
-		}
-	}
-
-	return reflect.DeepEqual(derefGot, derefWant)
-}
-
-func deref(a any) any {
-	v := reflect.ValueOf(a)
-	for v.Kind() == reflect.Ptr {
-		v = v.Elem()
-	}
-	return v.Interface()
+	return cmp.Equal(got, want, cmp.Exporter(func(reflect.Type) bool { return true }))
 }
 
 func isNil(obj any) bool {

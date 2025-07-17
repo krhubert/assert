@@ -13,7 +13,8 @@ import (
 
 func Test_equal(t *testing.T) {
 	type T struct {
-		t *time.Time
+		t  *time.Time
+		ts []*time.Time
 	}
 
 	True(t, equal[*int](nil, nil))
@@ -22,9 +23,10 @@ func Test_equal(t *testing.T) {
 	False(t, equal(1, 0))
 	True(t, equal([]byte("hello"), []byte("hello")))
 	False(t, equal([]byte("hello"), []byte("-")))
-
+	//
 	// interface Equal(V) bool
 	now := time.Now()
+	now1 := now.Add(1)
 	utc := now.In(time.UTC)
 
 	wlc := Must(time.LoadLocation("Europe/Warsaw"))
@@ -32,6 +34,26 @@ func Test_equal(t *testing.T) {
 
 	True(t, equal(utc, waw))
 	True(t, equal(&utc, &waw))
+	True(t, equal(
+		[]*T{{t: &utc}},
+		[]*T{{t: &waw}},
+	))
+	True(t, equal(
+		&T{t: &utc},
+		&T{t: &waw},
+	))
+	True(t, equal(
+		&T{t: &utc, ts: []*time.Time{&utc}},
+		&T{t: &waw, ts: []*time.Time{&waw}},
+	))
+	True(t, equal(
+		[]T{{t: &utc, ts: []*time.Time{&utc}}},
+		[]T{{t: &waw, ts: []*time.Time{&waw}}},
+	))
+	False(t, equal(
+		[]T{{t: &utc, ts: []*time.Time{&utc}}},
+		[]T{{t: &waw, ts: []*time.Time{&now1}}},
+	))
 	False(t, equal(now, time.Time{}))
 
 	// dereference pointers
@@ -163,6 +185,14 @@ func TestErrorWant(t *testing.T) {
 func TestNil(t *testing.T) {
 	atb := &assertTB{TB: t}
 	Nil(atb, nil)
+	atb.pass(t)
+
+	atb = &assertTB{TB: t}
+	Nil(atb, map[string]int(nil))
+	atb.pass(t)
+
+	atb = &assertTB{TB: t}
+	Nil(atb, chan int(nil))
 	atb.pass(t)
 
 	atb = &assertTB{TB: t}
