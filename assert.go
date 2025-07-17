@@ -65,7 +65,7 @@ func Equal[V any](t testing.TB, got V, want V, opts ...EqualOption) {
 
 	t.Helper()
 	if !equal(got, want, opts...) {
-		t.Fatalf("expected equal\n%s", diffValue(got, want))
+		t.Fatalf("expected equal\n%s", diffValue(got, want, opts...))
 	}
 }
 
