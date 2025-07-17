@@ -9,18 +9,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/r3labs/diff/v3"
-	"github.com/sanity-io/litter"
-	"github.com/sergi/go-diff/diffmatchpatch"
 )
-
-// DiffOptions is the configuration for the diff output.
-// You can set the options to customize the output.
-var DiffOptions = litter.Options{
-	StripPackageNames: false,
-	HidePrivateFields: false,
-	Separator:         " ",
-}
 
 type equaler struct {
 	// unexported ignores unexported fields of structs.
@@ -349,47 +338,19 @@ func isNil(obj any) bool {
 	return false
 }
 
-func diffValue[V any](a V, b V) string {
+func diffValue[V any](a V, b V, opts ...EqualOption) string {
 	// first let GoStringer format the values if they implement it
+	out := ""
 	if _, ok := any(a).(fmt.GoStringer); ok {
-		return diffGoStringer(any(a).(fmt.GoStringer), any(b).(fmt.GoStringer))
+		out += diffGoStringer(any(a).(fmt.GoStringer), any(b).(fmt.GoStringer))
+		out += "\n"
 	}
 
-	// use litter to dump the values and then diff them
-	// but if there's no difference, then try next method
-	as := DiffOptions.Sdump(a)
-	bs := DiffOptions.Sdump(b)
-	dmp := diffmatchpatch.New()
-	diffs := dmp.DiffMain(bs, as, true)
-	allDiffEqual := true
-	for _, d := range diffs {
-		if d.Type != diffmatchpatch.DiffEqual {
-			allDiffEqual = false
-			break
-		}
-	}
-
-	if !allDiffEqual {
-		return dmp.DiffPrettyText(diffs)
-	}
-
-	// if litter fails, then use diff package and show the changes
-	if changelog, err := diff.Diff(a, b); err == nil {
-		ret := "\n"
-		for _, c := range changelog {
-			ret += fmt.Sprintf("[%s] %T path %s: %q -> %q\n", c.Type, a, strings.Join(c.Path, "."), c.From, c.To)
-		}
-		return ret
-	}
-
-	// if all fails, then just show the GoString of the values
-	aStr := fmt.Sprintf("%#v", a)
-	aStr = aStr[0:min(len(aStr), 1024)]
-
-	bStr := fmt.Sprintf("%#v", b)
-	bStr = bStr[0:min(len(bStr), 1024)]
-
-	return fmt.Sprintf(" got: %s\nwant: %s", aStr, bStr)
+	eq := equaler{}
+	cmpOpts := eq.apply(opts...)
+	out += "diff:\n"
+	out += cmp.Diff(a, b, cmpOpts...)
+	return out
 }
 
 func diffGoStringer(a, b fmt.GoStringer) string {
@@ -402,5 +363,5 @@ func diffGoStringer(a, b fmt.GoStringer) string {
 	if !isNil(b) {
 		want = b.GoString()
 	}
-	return fmt.Sprintf(" got: %s\n want %s\n", got, want)
+	return fmt.Sprintf(" got: %s\nwant: %s\n", got, want)
 }
