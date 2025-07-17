@@ -23,10 +23,14 @@ var DiffOptions = litter.Options{
 }
 
 type equaler struct {
-	unexported      bool
+	// unexported ignores unexported fields of structs.
+	unexported bool
+
+	// skipEmptyFields ignores struct fields that are empty.
 	skipEmptyFields bool
 }
 
+// EqualOption configures the equality check behavior.
 type EqualOption func(o *equaler)
 
 func (o *equaler) apply(opts ...EqualOption) cmp.Options {
@@ -48,27 +52,23 @@ func (o *equaler) apply(opts ...EqualOption) cmp.Options {
 	return out
 }
 
+// IgnoreUnexported returns an EqualOption that ignores unexported fields of structs.
 func IgnoreUnexported() EqualOption {
 	return func(o *equaler) {
 		o.unexported = true
 	}
 }
 
+// SkipEmptyFields returns an EqualOption that ignores struct fields that are empty.
 func SkipEmptyFields() EqualOption {
 	return func(o *equaler) {
 		o.skipEmptyFields = true
 	}
 }
 
-// Equal checks if two values are equal.
+// Equal checks if two values are equal with the given options.
 //
-// Following rules are used to determine if two values are equal:
-//
-// 1. if both values are nil, they are equal.
-// 2. if one value is nil and the other is not, they are not equal
-// 3. if Equal(v) bool method is defined on the value, it is used.
-// 4. if the value is a []byte, bytes.Equal is used.
-// 5. otherwise, reflect.DeepEqual is used.
+// This functions uses [go-cmp](https://pkg.go.dev/github.com/google/go-cmp) to determine equality.
 func Equal[V any](t testing.TB, got V, want V, opts ...EqualOption) {
 	if _, ok := any(got).(error); ok {
 		panic("use assert.Error() for errors")

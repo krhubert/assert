@@ -7,6 +7,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
+// compareExported returns an [cmp.Option] that compares all exported fields of a struct,
 func compareExported() cmp.Option {
 	return cmp.Exporter(func(reflect.Type) bool { return true })
 }
@@ -43,6 +44,7 @@ func ignoreEmptyFields() cmp.Option {
 	)
 }
 
+// isEmptyValue checks if the given reflect.Value is empty.
 func isEmptyValue(v reflect.Value) bool {
 	switch v.Kind() {
 	case reflect.Array, reflect.Map, reflect.Slice, reflect.String:
