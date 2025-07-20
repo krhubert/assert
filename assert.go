@@ -206,6 +206,30 @@ func NotZero[T any](t testing.TB, got T) {
 	}
 }
 
+// Empty checks if got is empty.
+func Empty(t testing.TB, got any) {
+	if _, ok := got.(error); ok {
+		panic("use assert.NoError() for errors")
+	}
+
+	t.Helper()
+	if !isEmpty(got) {
+		t.Fatalf("expected empty, got %v", got)
+	}
+}
+
+// NotEmpty checks if got is not empty.
+func NotEmpty(t testing.TB, got any) {
+	if _, ok := got.(error); ok {
+		panic("use assert.Error() for errors")
+	}
+
+	t.Helper()
+	if isEmpty(got) {
+		t.Fatalf("expected not empty, got empty")
+	}
+}
+
 // Nil checks if got is nil.
 func Nil(t testing.TB, got any) {
 	if _, ok := got.(error); ok {
@@ -398,6 +422,24 @@ func isZero(t any) bool {
 		return v.Interface().(isZeroer).IsZero()
 	case reflect.PointerTo(typ).Implements(isZeroerType):
 		return v.Addr().Interface().(isZeroer).IsZero()
+	default:
+		return v.IsZero()
+	}
+}
+
+func isEmpty(t any) bool {
+	if t == nil {
+		// untyped nil
+		return true
+	}
+
+	v := reflect.ValueOf(t)
+	switch v.Kind() {
+	case reflect.String, reflect.Chan, reflect.Map,
+		reflect.Slice, reflect.Array:
+		return v.Len() == 0
+	case reflect.Pointer, reflect.UnsafePointer, reflect.Interface, reflect.Func:
+		return v.IsNil()
 	default:
 		return v.IsZero()
 	}

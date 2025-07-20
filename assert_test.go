@@ -333,6 +333,56 @@ func TestNotZero(t *testing.T) {
 	}
 }
 
+func TestEmpty(t *testing.T) {
+	tests := []struct {
+		value any
+		fail  string
+	}{
+		{value: nil, fail: ""},
+		{value: time.Time{}, fail: ""},
+		{value: time.Time{}.In(time.Local), fail: "expected empty, got 0001-01-01"},
+		{value: 0, fail: ""},
+		{value: .0, fail: ""},
+		{value: make(chan int), fail: ""},
+		{value: map[string]string(nil), fail: ""},
+		{value: make(map[string]string), fail: ""},
+		{value: []int(nil), fail: ""},
+		{value: []int{}, fail: ""},
+	}
+	for _, tt := range tests {
+		t.Run(fmt.Sprintf("%T", tt.value), func(t *testing.T) {
+			atb := &assertTB{TB: t}
+			Empty(atb, tt.value)
+			atb.check(t, tt.fail)
+		})
+	}
+}
+
+func TestNotEmpty(t *testing.T) {
+	tests := []struct {
+		value any
+		fail  string
+	}{
+		{value: nil, fail: "expected not empty"},
+		{value: time.Time{}, fail: "expected not empty"},
+		{value: time.Time{}.In(time.Local), fail: ""},
+		{value: 0, fail: "expected not empty"},
+		{value: .0, fail: "expected not empty"},
+		{value: make(chan int), fail: "expected not empty"},
+		{value: map[string]string(nil), fail: "expected not empty"},
+		{value: make(map[string]string), fail: "expected not empty"},
+		{value: []int(nil), fail: "expected not empty"},
+		{value: []int{}, fail: "expected not empty"},
+	}
+	for _, tt := range tests {
+		t.Run(fmt.Sprintf("%T", tt.value), func(t *testing.T) {
+			atb := &assertTB{TB: t}
+			NotEmpty(atb, tt.value)
+			atb.check(t, tt.fail)
+		})
+	}
+}
+
 func TestLen(t *testing.T) {
 	atb := &assertTB{TB: t}
 	Len(atb, []int{1, 2, 3}, 3)
