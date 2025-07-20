@@ -11,6 +11,12 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
+type isZeroer interface {
+	IsZero() bool
+}
+
+var isZeroerType = reflect.TypeFor[isZeroer]()
+
 type equaler struct {
 	// unexported ignores unexported fields of structs.
 	unexported bool
@@ -181,17 +187,21 @@ func ErrorWant(t testing.TB, want bool, err error) {
 }
 
 // Zero checks if got is zero value.
-func Zero[T comparable](t testing.TB, got T) {
+// If value implements IsZero() bool method,
+// it will be used to determine if the value is zero.
+func Zero[T any](t testing.TB, got T) {
 	t.Helper()
-	if got != *new(T) {
+	if !isZero(got) {
 		t.Fatalf("expected zero, got %v", got)
 	}
 }
 
 // NotZero checks if got is not zero value.
-func NotZero[V comparable](t testing.TB, got V) {
+// If value implements IsZero() bool method,
+// it will be used to determine if the value is zero.
+func NotZero[T any](t testing.TB, got T) {
 	t.Helper()
-	if got == *new(V) {
+	if isZero(got) {
 		t.Fatalf("expected not zero, got %v", got)
 	}
 }
@@ -364,4 +374,31 @@ func diffGoStringer(a, b fmt.GoStringer) string {
 		want = b.GoString()
 	}
 	return fmt.Sprintf(" got: %s\nwant: %s\n", got, want)
+}
+
+func isZero(t any) bool {
+	if t == nil {
+		// untyped nil
+		return true
+	}
+
+	v := reflect.ValueOf(t)
+	typ := v.Type()
+	switch {
+	case typ.Kind() == reflect.Interface && typ.Implements(isZeroerType):
+		// Avoid panics calling IsZero on a nil interface or
+		// non-nil interface with nil pointer.
+		return v.IsNil() ||
+			(v.Elem().Kind() == reflect.Pointer && v.Elem().IsNil()) ||
+			v.Interface().(isZeroer).IsZero()
+	case typ.Kind() == reflect.Pointer && typ.Implements(isZeroerType):
+		// Avoid panics calling IsZero on nil pointer.
+		return v.IsNil() || v.Interface().(isZeroer).IsZero()
+	case typ.Implements(isZeroerType):
+		return v.Interface().(isZeroer).IsZero()
+	case reflect.PointerTo(typ).Implements(isZeroerType):
+		return v.Addr().Interface().(isZeroer).IsZero()
+	default:
+		return v.IsZero()
+	}
 }

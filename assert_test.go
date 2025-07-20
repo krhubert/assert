@@ -282,23 +282,55 @@ func TestNotNil(t *testing.T) {
 }
 
 func TestZero(t *testing.T) {
-	atb := &assertTB{TB: t}
-	Zero(atb, 0)
-	atb.pass(t)
+	tests := []struct {
+		value any
+		fail  string
+	}{
+		{value: nil, fail: ""},
+		{value: time.Time{}, fail: ""},
+		{value: time.Time{}.In(time.Local), fail: ""},
+		{value: 0, fail: ""},
+		{value: .0, fail: ""},
+		{value: make(chan int), fail: "expected zero, got 0x"},
+		{value: map[string]string(nil), fail: ""},
+		{value: make(map[string]string), fail: "expected zero, got map[]"},
+		{value: []int(nil), fail: ""},
+		{value: []int{}, fail: "expected zero, got []"},
+	}
 
-	atb = &assertTB{TB: t}
-	Zero(atb, 1)
-	atb.fail(t, "expected zero, got 1")
+	for _, tt := range tests {
+		t.Run(fmt.Sprintf("%T", tt.value), func(t *testing.T) {
+			atb := &assertTB{TB: t}
+			Zero(atb, tt.value)
+			atb.check(t, tt.fail)
+		})
+	}
 }
 
 func TestNotZero(t *testing.T) {
-	atb := &assertTB{TB: t}
-	NotZero(atb, 1)
-	atb.pass(t)
+	tests := []struct {
+		value any
+		fail  string
+	}{
+		{value: nil, fail: "expected not zero, got <nil>"},
+		{value: time.Time{}, fail: "expected not zero, got 0001-01-01 00:00:00 +0000 UTC"},
+		{value: time.Time{}.In(time.Local), fail: "expected not zero, got 0001-01"},
+		{value: 0, fail: "expected not zero, got 0"},
+		{value: .0, fail: "expected not zero, got 0"},
+		{value: make(chan int), fail: ""},
+		{value: map[string]string(nil), fail: "expected not zero, got map[]"},
+		{value: make(map[string]string), fail: ""},
+		{value: []int(nil), fail: "expected not zero, got []"},
+		{value: []int{}, fail: ""},
+	}
 
-	atb = &assertTB{TB: t}
-	NotZero(atb, 0)
-	atb.fail(t, "expected not zero, got 0")
+	for _, tt := range tests {
+		t.Run(fmt.Sprintf("%T", tt.value), func(t *testing.T) {
+			atb := &assertTB{TB: t}
+			NotZero(atb, tt.value)
+			atb.check(t, tt.fail)
+		})
+	}
 }
 
 func TestLen(t *testing.T) {
