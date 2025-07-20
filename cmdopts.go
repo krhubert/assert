@@ -28,7 +28,8 @@ func ignoreUnexported() cmp.Option {
 	)
 }
 
-// ignoreEmptyFields returns an [cmp.Option] that only ignores the empty values.
+// ignoreEmptyFields returns an [cmp.Option]
+// ignores fields that are empty in the expected value.
 func ignoreEmptyFields() cmp.Option {
 	return cmp.FilterPath(
 		func(p cmp.Path) bool {
@@ -44,30 +45,19 @@ func ignoreEmptyFields() cmp.Option {
 	)
 }
 
-// isEmptyValue checks if the given reflect.Value is empty.
-func isEmptyValue(v reflect.Value) bool {
-	switch v.Kind() {
-	case reflect.Map, reflect.Slice, reflect.String:
-		return v.Len() == 0
-	case reflect.Array:
-		zero := reflect.Zero(v.Type()).Interface()
-		return reflect.DeepEqual(v.Interface(), zero)
-	case reflect.Bool,
-		reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
-		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr,
-		reflect.Float32, reflect.Float64,
-		reflect.Interface, reflect.Pointer:
-		return v.IsZero()
-	}
+// ignoreZeroFields returns an [cmp.Option] that
+// ignores fields that have a zero value.
+func ignoreZeroFields() cmp.Option {
+	return cmp.FilterPath(
+		func(p cmp.Path) bool {
+			sf, ok := p.Index(-1).(cmp.StructField)
+			if !ok {
+				return false
+			}
 
-	// v.Equal(zero)
-	if method := v.MethodByName("Equal"); method.IsValid() {
-		methodType := method.Type()
-		if methodType.NumIn() == 1 && methodType.NumOut() == 1 && methodType.Out(0).Kind() == reflect.Bool {
-			zero := reflect.Zero(v.Type())
-			return method.Call([]reflect.Value{zero})[0].Bool()
-		}
-	}
-
-	return false
+			_, wantv := sf.Values()
+			return isZeroValue(wantv)
+		},
+		cmp.Ignore(),
+	)
 }

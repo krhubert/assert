@@ -23,6 +23,9 @@ type equaler struct {
 
 	// skipEmptyFields ignores struct fields that are empty.
 	skipEmptyFields bool
+
+	// skipZeroFields ignores struct fields that are zero values.
+	skipZeroFields bool
 }
 
 // EqualOption configures the equality check behavior.
@@ -44,6 +47,10 @@ func (o *equaler) apply(opts ...EqualOption) cmp.Options {
 		out = append(out, ignoreEmptyFields())
 	}
 
+	if o.skipZeroFields {
+		out = append(out, ignoreZeroFields())
+	}
+
 	return out
 }
 
@@ -55,9 +62,18 @@ func IgnoreUnexported() EqualOption {
 }
 
 // SkipEmptyFields returns an EqualOption that ignores struct fields that are empty.
+// see [Empty] for details on how empty is determined.
 func SkipEmptyFields() EqualOption {
 	return func(o *equaler) {
 		o.skipEmptyFields = true
+	}
+}
+
+// SkipZeroFields returns an EqualOption that ignores struct fields that are zero.
+// see [Zero] for details on how zero is determined.
+func SkipZeroFields() EqualOption {
+	return func(o *equaler) {
+		o.skipZeroFields = true
 	}
 }
 
@@ -406,7 +422,15 @@ func isZero(t any) bool {
 		return true
 	}
 
-	v := reflect.ValueOf(t)
+	return isZeroValue(reflect.ValueOf(t))
+}
+
+func isZeroValue(v reflect.Value) bool {
+	if !v.IsValid() {
+		// untyped nil
+		return true
+	}
+
 	typ := v.Type()
 	switch {
 	case typ.Kind() == reflect.Interface && typ.Implements(isZeroerType):
@@ -433,11 +457,21 @@ func isEmpty(t any) bool {
 		return true
 	}
 
-	v := reflect.ValueOf(t)
+	return isEmptyValue(reflect.ValueOf(t))
+}
+
+func isEmptyValue(v reflect.Value) bool {
+	if !v.IsValid() {
+		// untyped nil
+		return true
+	}
+
 	switch v.Kind() {
-	case reflect.String, reflect.Chan, reflect.Map,
-		reflect.Slice, reflect.Array:
+	case reflect.String, reflect.Chan, reflect.Map, reflect.Slice:
 		return v.Len() == 0
+	case reflect.Array:
+		zero := reflect.Zero(v.Type()).Interface()
+		return reflect.DeepEqual(v.Interface(), zero)
 	case reflect.Pointer, reflect.UnsafePointer, reflect.Interface, reflect.Func:
 		return v.IsNil()
 	default:

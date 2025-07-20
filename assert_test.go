@@ -99,12 +99,49 @@ func TestEqualSkipEmptyFields(t *testing.T) {
 		b int
 		C time.Time
 		D []int
+		E [0]int
+		F [16]uint8
 	}
 
 	atb := &assertTB{TB: t}
-	got := T{A: 1, b: 2, C: time.Now(), D: []int{1}}
-	want := T{b: 2}
+	got := T{
+		A: 1,
+		b: 2,
+		C: time.Now(),
+		D: []int{1},
+		F: [16]uint8{1},
+	}
+	want := T{
+		b: 2,
+		D: []int{},
+	}
 	Equal(atb, got, want, SkipEmptyFields())
+	atb.pass(t)
+}
+
+func TestEqualSkipZeroFields(t *testing.T) {
+	type T struct {
+		A int
+		b int
+		C time.Time
+		D []int
+		E [0]int
+		F [16]uint8
+	}
+
+	atb := &assertTB{TB: t}
+	got := T{
+		A: 1,
+		b: 2,
+		C: time.Now(),
+		D: []int{1},
+		F: [16]uint8{1},
+	}
+	want := T{
+		b: 2,
+		C: time.Time{}.In(time.Local),
+	}
+	Equal(atb, got, want, SkipZeroFields())
 	atb.pass(t)
 }
 
