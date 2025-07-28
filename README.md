@@ -69,6 +69,53 @@ func TestXYZ(t *testing.T) {
 }
 ```
 
+## Suite
+
+```go
+package main
+
+import (
+    "errors"
+    "fmt"
+    "io"
+    "io/fs"
+    "testing"
+
+ _ "github.com/mattn/go-sqlite3"
+ "go.uber.org/mock/gomock"
+    "github.com/krhubert/assert"
+)
+
+type ExampleTestSuite struct {
+    assert.Suite
+
+    i    int
+    ctrl *gomock.Controller
+    db  *sql.DB
+}
+
+func (s *ExampleTestSuite) Setup(t *testing.T) {
+    s.i = 4
+    s.ctrl = gomock.NewController(t)
+    db, err := sql.Open("sqlite3", ":memory:")
+    assert.NoError(t, err)
+    s.db = db
+}
+
+func (s *ExampleTestSuite) Teardown(t *testing.T) {
+    s.i = 0
+    assert.NoError(t, s.db.Close())
+}
+
+func TestExample(t *testing.T) {
+     ts := assert.Setup[ExampleTestSuite](t)
+     row := ts.db.QueryRow("select date()")
+     var date string
+     assert.NoError(ts, row.Scan(&date))
+     assert.NoError(ts, row.Err())
+}
+```
+
 ## Assert vs testify
 
 ```go
