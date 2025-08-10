@@ -1,8 +1,9 @@
 package assert
 
 import (
-	"go/token"
 	"reflect"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/google/go-cmp/cmp"
 )
@@ -22,7 +23,7 @@ func ignoreUnexported() cmp.Option {
 				return false
 			}
 
-			return !token.IsExported(sf.Name())
+			return !isExported(sf.Name())
 		},
 		cmp.Ignore(),
 	)
@@ -60,4 +61,23 @@ func ignoreZeroFields() cmp.Option {
 		},
 		cmp.Ignore(),
 	)
+}
+
+// ignoreFieldNames returns an [cmp.Option] that ignores fields of the
+// given names on a single struct type.
+//
+// It respects the names of exported fields that are forwarded due to struct embedding.
+// The struct type is specified by passing in a value of that type.
+//
+// The name may be a dot-delimited string (e.g., "Foo.Bar") to ignore a
+// specific sub-field that is embedded or nested within the parent struct.
+func ignoreFieldNames(typ any, names ...string) cmp.Option {
+	sf := newStructFilter(typ, names...)
+	return cmp.FilterPath(sf.filter, cmp.Ignore())
+}
+
+// isExported reports whether name starts with an upper-case letter.
+func isExported(name string) bool {
+	ch, _ := utf8.DecodeRuneInString(name)
+	return unicode.IsUpper(ch)
 }

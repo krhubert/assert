@@ -145,6 +145,66 @@ func TestEqualSkipZeroFields(t *testing.T) {
 	atb.pass(t)
 }
 
+func TestEqualIgnoreFieldNames(t *testing.T) {
+	type T0 struct {
+		E int
+		F struct {
+			G int
+		}
+	}
+
+	type T struct {
+		A int
+		B int
+		C time.Time
+		D T0
+		h int
+	}
+
+	got := T{
+		A: 1,
+		B: 2,
+		D: T0{
+			E: 3,
+			F: struct{ G int }{5},
+		},
+		h: 1,
+	}
+	want := T{
+		B: 2,
+		D: T0{
+			E: 3,
+		},
+	}
+
+	atb := &assertTB{TB: t}
+	Equal(atb, got, want, SkipFieldNames("A", "C", "D.F.G", "h"))
+	atb.pass(t)
+
+	atb = &assertTB{TB: t}
+	Equal(atb, &got, &want, SkipFieldNames("A", "C", "D.F.G", "h"))
+	atb.pass(t)
+
+	// non-existing field name
+	atb = &assertTB{TB: t}
+	Panic(t, func() {
+		Equal(atb, got, want, SkipFieldNames("X"))
+	})
+
+	// empty field name
+	atb = &assertTB{TB: t}
+	Panic(t, func() {
+		Equal(atb, got, want, SkipFieldNames(""))
+	})
+
+	// non-struct type
+	atb = &assertTB{TB: t}
+	Panic(t, func() {
+		m := map[string]int{"A": 1}
+		Equal(atb, m, m, SkipFieldNames("A"))
+	})
+}
+
 func TestNotEqual(t *testing.T) {
 	atb := &assertTB{TB: t}
 	NotEqual(atb, 0, 1)

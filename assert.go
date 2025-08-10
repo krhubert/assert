@@ -11,48 +11,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-type isZeroer interface {
-	IsZero() bool
-}
-
-var isZeroerType = reflect.TypeFor[isZeroer]()
-
-type equaler struct {
-	// ignoreUnexported ignores ignoreUnexported fields of structs.
-	ignoreUnexported bool
-
-	// skipEmptyFields ignores struct fields that are empty.
-	skipEmptyFields bool
-
-	// skipZeroFields ignores struct fields that are zero values.
-	skipZeroFields bool
-}
-
 // EqualOption configures the equality check behavior.
 type EqualOption func(o *equaler)
-
-func (o *equaler) apply(opts ...EqualOption) cmp.Options {
-	for _, opt := range opts {
-		opt(o)
-	}
-
-	out := []cmp.Option{}
-	if o.ignoreUnexported {
-		out = append(out, ignoreUnexported())
-	} else {
-		out = append(out, compareExported())
-	}
-
-	if o.skipEmptyFields {
-		out = append(out, ignoreEmptyFields())
-	}
-
-	if o.skipZeroFields {
-		out = append(out, ignoreZeroFields())
-	}
-
-	return out
-}
 
 // IgnoreUnexported returns an EqualOption that ignores unexported fields of structs.
 func IgnoreUnexported() EqualOption {
@@ -77,6 +37,18 @@ func SkipZeroFields() EqualOption {
 	}
 }
 
+// SkipFieldNames returns an EqualOption that ignores a specific field names in the struct.
+//
+// The name may be a dot-delimited string (e.g., "Foo.Bar") to ignore
+// a specific sub-field that is embedded or nested within the parent struct.
+//
+// This option can be only used for structs, otherwise it will panic.
+func SkipFieldNames(names ...string) EqualOption {
+	return func(o *equaler) {
+		o.skipFieldNames = append(o.skipFieldNames, names...)
+	}
+}
+
 // Equal checks if two values are equal with the given options.
 //
 // This functions uses [go-cmp](https://pkg.go.dev/github.com/google/go-cmp) to determine equality.
@@ -93,7 +65,7 @@ func Equal[V any](t testing.TB, got V, want V, opts ...EqualOption) {
 
 // NotEqual checks if two values are not equal.
 // See [Equal] for rules used to determine equality.
-func NotEqual[T any](t testing.TB, got T, want T, opts ...EqualOption) {
+func NotEqual[V any](t testing.TB, got V, want V, opts ...EqualOption) {
 	if _, ok := any(got).(error); ok {
 		panic("use assert.Error() for errors")
 	}
@@ -367,9 +339,56 @@ func Must3[P1 any, P2 any, P3 any](p1 P1, p2 P2, p3 P3, err error) (P1, P2, P3) 
 	return p1, p2, p3
 }
 
+type equaler struct {
+	// ignoreUnexported ignores ignoreUnexported fields of structs.
+	ignoreUnexported bool
+
+	// skipEmptyFields ignores struct fields that are empty.
+	skipEmptyFields bool
+
+	// skipZeroFields ignores struct fields that are zero values.
+	skipZeroFields bool
+
+	// skipFieldNames is a list of field names to
+	// skip in the equality check.
+	skipFieldNames []string
+}
+
+func newEqualer() *equaler {
+	return &equaler{}
+}
+
+func (o *equaler) apply(typ any, opts ...EqualOption) cmp.Options {
+	for _, opt := range opts {
+		opt(o)
+	}
+
+	out := []cmp.Option{}
+	if o.ignoreUnexported {
+		out = append(out, ignoreUnexported())
+	} else {
+		out = append(out, compareExported())
+	}
+
+	if o.skipEmptyFields {
+		out = append(out, ignoreEmptyFields())
+	}
+
+	if o.skipZeroFields {
+		out = append(out, ignoreZeroFields())
+	}
+
+	if len(o.skipFieldNames) > 0 {
+		out = append(out, ignoreFieldNames(typ, o.skipFieldNames...))
+	}
+
+	return out
+}
+
 func equal[V any](got V, want V, opts ...EqualOption) bool {
-	eq := equaler{}
-	cmpOpts := eq.apply(opts...)
+	eq := newEqualer()
+	var zero V
+	cmpOpts := eq.apply(zero, opts...)
 	return cmp.Equal(got, want, cmpOpts...)
 }
 
@@ -396,8 +415,9 @@ func diffValue[V any](a V, b V, opts ...EqualOption) string {
 		out += "\n"
 	}
 
-	eq := equaler{}
-	cmpOpts := eq.apply(opts...)
+	eq := newEqualer()
+	var zero V
+	cmpOpts := eq.apply(zero, opts...)
 	out += "diff:\n"
 	out += cmp.Diff(a, b, cmpOpts...)
 	return out
@@ -424,6 +444,12 @@ func isZero(t any) bool {
 
 	return isZeroValue(reflect.ValueOf(t))
 }
+
+type isZeroer interface {
+	IsZero() bool
+}
+
+var isZeroerType = reflect.TypeFor[isZeroer]()
 
 func isZeroValue(v reflect.Value) bool {
 	if !v.IsValid() {
