@@ -18,8 +18,8 @@ type isZeroer interface {
 var isZeroerType = reflect.TypeFor[isZeroer]()
 
 type equaler struct {
-	// unexported ignores unexported fields of structs.
-	unexported bool
+	// ignoreUnexported ignores ignoreUnexported fields of structs.
+	ignoreUnexported bool
 
 	// skipEmptyFields ignores struct fields that are empty.
 	skipEmptyFields bool
@@ -37,7 +37,7 @@ func (o *equaler) apply(opts ...EqualOption) cmp.Options {
 	}
 
 	out := []cmp.Option{}
-	if o.unexported {
+	if o.ignoreUnexported {
 		out = append(out, ignoreUnexported())
 	} else {
 		out = append(out, compareExported())
@@ -57,7 +57,7 @@ func (o *equaler) apply(opts ...EqualOption) cmp.Options {
 // IgnoreUnexported returns an EqualOption that ignores unexported fields of structs.
 func IgnoreUnexported() EqualOption {
 	return func(o *equaler) {
-		o.unexported = true
+		o.ignoreUnexported = true
 	}
 }
 
