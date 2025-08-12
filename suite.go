@@ -67,6 +67,8 @@ func Setup[V any, S interface {
 	*V
 	Suiter
 }](t *testing.T) S {
+	t.Helper()
+
 	s := S(new(V))
 	s.Setup(t)
 	t.Cleanup(func() {
