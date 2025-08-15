@@ -310,7 +310,7 @@ func TypeAssert[V any](t testing.TB, got any) V {
 	t.Helper()
 	v, ok := got.(V)
 	if !ok {
-		t.Fatalf("assertion %T.(%T) failed", v, got)
+		t.Fatalf("assertion %T.(%T) failed", got, v)
 	}
 	return v
 }

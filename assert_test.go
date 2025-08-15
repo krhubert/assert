@@ -572,7 +572,7 @@ func TestTypeAssert(t *testing.T) {
 
 	atb = &assertTB{TB: t}
 	TypeAssert[string](atb, 0)
-	atb.fail(t, "assertion string.(int) failed")
+	atb.fail(t, "assertion int.(string) failed")
 }
 
 func TestMust(t *testing.T) {
