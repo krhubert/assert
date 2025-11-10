@@ -5,6 +5,7 @@ package assert
 
 import (
 	"fmt"
+	"go/token"
 	"reflect"
 	"strings"
 
@@ -142,7 +143,7 @@ func canonicalName(t reflect.Type, sel string) ([]string, error) {
 	// Find the canonical name for this current field name.
 	// If the field exists in an embedded struct, then it will be expanded.
 	sf, _ := t.FieldByName(name)
-	if !isExported(name) {
+	if !token.IsExported(name) {
 		// Avoid using reflect.Type.FieldByName for unexported fields due to
 		// buggy behavior with regard to embedding and unexported fields.
 		// See https://golang.org/issue/4876 for details.

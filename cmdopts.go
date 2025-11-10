@@ -1,9 +1,8 @@
 package assert
 
 import (
+	"go/token"
 	"reflect"
-	"unicode"
-	"unicode/utf8"
 
 	"github.com/google/go-cmp/cmp"
 )
@@ -23,7 +22,7 @@ func ignoreUnexported() cmp.Option {
 				return false
 			}
 
-			return !isExported(sf.Name())
+			return !token.IsExported(sf.Name())
 		},
 		cmp.Ignore(),
 	)
@@ -74,10 +73,4 @@ func ignoreZeroFields() cmp.Option {
 func ignoreFieldNames(typ any, names ...string) cmp.Option {
 	sf := newStructFilter(typ, names...)
 	return cmp.FilterPath(sf.filter, cmp.Ignore())
-}
-
-// isExported reports whether name starts with an upper-case letter.
-func isExported(name string) bool {
-	ch, _ := utf8.DecodeRuneInString(name)
-	return unicode.IsUpper(ch)
 }
